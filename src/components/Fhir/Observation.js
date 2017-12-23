@@ -7,12 +7,19 @@ import ValueRange  from "./ValueRange"
 import Time        from "./Time"
 import Period      from "./Period"
 import Date        from "./Date"
+import LineChart   from "../LineChart"
+import CandlestickChart   from "../CandlestickChart"
 
 export default class Observations extends React.Component
 {
     static propTypes = {
-        resources: PropTypes.arrayOf(PropTypes.object)
+	resources: PropTypes.arrayOf(PropTypes.object),
+	selectedSubCat: PropTypes.string
     };
+
+    constructor(props) {
+        super(props);
+    }
 
     getObservationLabel(o) {
         return (
@@ -109,40 +116,87 @@ export default class Observations extends React.Component
         return returnResult(<span className="text-muted">N/A</span>)
     }
 
+    groupBy(arr, propOrAccFn)
+    {
+	return arr.reduce((result, elt) => {
+	    let prop = propOrAccFn instanceof Function ? propOrAccFn(elt) : propOrAccFn;
+	    if (!result[prop]) { result[prop] = []; }
+	    result[prop].push(elt);
+	    return result;
+	}, {});
+    }
+
+    renderGraphs()
+    {
+	let items = (this.props.resources || []).map(item => {
+	    return item.resource;
+	})
+
+	// Collect/group items to display in each graph
+	let groups = this.groupBy(items, item => item.component[0].code.text);
+
+	// Initialize the return array
+	let results = [];
+
+	// Build each graph
+	for (var key in groups) {
+	    let selectedItems = groups[key];
+	    let isDoubleValue = selectedItems[0].component[1] != undefined;	// First item has two components?
+	    if (isDoubleValue) {
+		results.push(<CandlestickChart key={key} resources={selectedItems} targetObservation={key}/>);
+	    } else {
+		results.push(<LineChart key={key} resources={selectedItems} targetObservation={key}/>);
+	    }
+	}
+
+	if (results.length > 0) {
+	    return (
+		<div id="graphs">
+		    { results }
+		</div>
+	    )
+	}	    
+	else
+	    return "";
+    }
+
     render()
     {
         return (
-            <Grid
-                rows={ (this.props.resources || []).map(o => o.resource) }
-                title="Observations"
-                groupBy="Name"
-                comparator={(a,b) => {
-                    let dA = getPath(a, "effectiveDateTime") || getPath(a, "meta.lastUpdated");
-                    let dB = getPath(b, "effectiveDateTime") || getPath(b, "meta.lastUpdated");
-                    dA = dA ? +moment(dA) : 0;
-                    dB = dB ? +moment(dB) : 0;
-                    return dB - dA;
-                }}
-                cols={[
-                    {
-                        label : "Name",
-                        path  : o => this.getObservationLabel(o),
-                        render: o => <b>{this.getObservationLabel(o)}</b>
-                    },
-                    {
-                        label : "Value",
-                        render: o => this.renderObservation(o)
-                    },
-                    {
-                        label: "Date",
-                        render: o => {
-                            let date = getPath(o, "effectiveDateTime") || getPath(o, "meta.lastUpdated");
-                            if (date) date = moment(date).format("MM/DD/YYYY");
-                            return <div className="text-muted">{ date || "-" }</div>
+	    <div>
+		{ this.props.selectedSubCat != "Observation - Other" ? this.renderGraphs() : "" }
+		<Grid
+            	    rows={ (this.props.resources || []).map(o => o.resource) }
+            	    title="Observations"
+                    groupBy="Name"
+                    comparator={(a,b) => {
+                        let dA = getPath(a, "effectiveDateTime") || getPath(a, "meta.lastUpdated");
+                        let dB = getPath(b, "effectiveDateTime") || getPath(b, "meta.lastUpdated");
+                        dA = dA ? +moment(dA) : 0;
+                        dB = dB ? +moment(dB) : 0;
+                        return dB - dA;
+                    }}
+                    cols={[
+                        {
+                            label : "Name",
+                            path  : o => this.getObservationLabel(o),
+                            render: o => <b>{this.getObservationLabel(o)}</b>
+                        },
+                        {
+                            label : "Value",
+                            render: o => this.renderObservation(o)
+                        },
+                        {
+                            label: "Date",
+                            render: o => {
+                                let date = getPath(o, "effectiveDateTime") || getPath(o, "meta.lastUpdated");
+                                if (date) date = moment(date).format("MM/DD/YYYY");
+                                return <div className="text-muted">{ date || "-" }</div>
+                            }
                         }
-                    }
-                ]}
-            />
+                    ]}
+                />
+	    </div>
         )
     }
 }

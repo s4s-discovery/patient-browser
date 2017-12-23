@@ -75,6 +75,18 @@ export class PatientDetail extends React.Component
         }
     }
 
+    // Kluge: synthesize a component for a resource if there isn't one
+    synthesizeComponents(entry) {
+	let r = entry.resource;
+	if (r.component == undefined) {
+	    r.component = [{ code : { text : r.code.text },
+				 valueQuantity : { value : r.valueQuantity.value,
+						   unit: r.valueQuantity.unit,
+						   code: r.valueQuantity.code }
+			       }];
+	}
+    }
+
     fetch(index)
     {
         index = intVal(index, -1);
@@ -183,8 +195,8 @@ export class PatientDetail extends React.Component
                     if (type == "Observation") {
                         let subCat = String(
                             getPath(entry, "resource.category.0.text") ||
-                            getPath(entry, "resource.category.coding.0.code") ||
-                            getPath(entry, "resource.category.0.coding.0.code") ||
+                            getPath(entry, "resource.category.coding.0.code") ||	// @@@@
+                            getPath(entry, "resource.category.0.coding.0.code") ||	// @@@@
                             "Other"
                         ).toLowerCase();
 
@@ -192,6 +204,9 @@ export class PatientDetail extends React.Component
                             return token.charAt(0).toUpperCase() + token.substr(1)
                         }).join(" ");
                         type += " - " + subCat;
+
+			// Following will move to the Data Augmentation layer
+			this.synthesizeComponents(entry)
                     }
 
                     if (!Array.isArray(groups[type])) {
@@ -339,7 +354,7 @@ export class PatientDetail extends React.Component
         }
 
         if (type.indexOf("Observation") === 0) {
-            return <Observations resources={items}/>;
+            return <Observations resources={items} selectedSubCat={this.state.selectedSubCat}/>;
         }
 
         switch (type) {
