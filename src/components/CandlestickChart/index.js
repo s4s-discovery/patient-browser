@@ -1,8 +1,11 @@
-import React       from "react"
-import PropTypes   from "prop-types"
-import moment      from "moment"
+import React       from 'react'
+import PropTypes   from 'prop-types'
+import moment      from 'moment'
+import CONFIG      from './config'
+import HoverTextTemplate from './hoverTextTemplate.js'
 import createPlotlyComponent from "react-plotlyjs"
 import Plotly      from "plotly.js/dist/plotly-cartesian"		
+import		   './CandlestickChart.less'
 
 const PlotlyComponent = createPlotlyComponent(Plotly);
 
@@ -49,6 +52,7 @@ export default class CandlestickChart extends React.Component
 	let isSingleValue = values1.length == 1;
 	let isDoubleValue = values1.length == 2;
 	let unit = selectedItemsSorted[0].component[0].valueQuantity.unit;
+	let chartTitle = this.props.targetObservation.includes("Blood Pressure") ? "Blood Pressure" : this.props.targetObservation;
 
 	let data = [
 	    {
@@ -60,23 +64,24 @@ export default class CandlestickChart extends React.Component
 		    array: values1.map((val, index) => (Number(val) - Number(values2[index]))/2),
 		    visible: true
 		},
-		marker: {
-		    color: 'rgb(16, 32, 77)',
-		    opacity: 0
-		},
-		line: {
-		    width: 0
-		},
+		marker: CONFIG.marker,
+		line: CONFIG.line,
 		// Show systolic + diastolic + date on one hover text item
 		hoverinfo: 'text',
-		hovertext: combined.map(item => 'Systolic:  '  + item.value1 + ' ' + unit + '<br>' +
-						'Diastolic: ' + item.value2 + ' ' + unit + '<br>(' +
-						moment(item.date).format("D MMM YYYY")+ ')')
+//		hovertext: combined.map(item => 'Systolic:  '  + item.value1 + ' ' + unit + '<br>' +
+//						'Diastolic: ' + item.value2 + ' ' + unit + '<br>(' +
+//						moment(item.date).format(CONFIG.hoverTextDateFormat)+ ')')
+		hovertext: combined.map(item => HoverTextTemplate({title: chartTitle,
+								   value1: item.value1,
+								   value2: item.value2,
+								   unit: unit,
+								   date: moment(item.date).format(CONFIG.hoverTextDateFormat)})),
+		hoverlabel: CONFIG.hoverLabel
 	    },
 	];
 
 	let layout = {
-	    title: this.props.targetObservation.includes("Blood Pressure") ? "Blood Pressure" : this.props.targetObservation,
+	    title: chartTitle,
 	    xaxis: {
 		title: 'Date',
 		// If only one/two data point(s), setup x-axis with "correct" tick values, tick format, and date range
@@ -96,15 +101,10 @@ export default class CandlestickChart extends React.Component
 	    yaxis: {
 		title: unit
 	    },
-	    height: 250,
-	    margin: { l:50, r:50, b:75, t:50, pad:0 }
+	    height: CONFIG.chartHeight,
+	    margin: CONFIG.margin
 	};
 
-	let config = {
-	    showLink: false,
-	    displayModeBar: false
-	};
-
-	return (<PlotlyComponent className={this.state.chartName} data={data} layout={layout} config={config}/>);
+	return (<PlotlyComponent className={this.state.chartName} data={data} layout={layout} config={CONFIG.chartConfig}/>);
     }
 }

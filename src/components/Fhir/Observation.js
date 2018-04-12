@@ -14,7 +14,7 @@ export default class Observations extends React.Component
 {
     static propTypes = {
 	resources: PropTypes.arrayOf(PropTypes.object),
-	selectedSubCat: PropTypes.string
+	type: PropTypes.string
     };
 
     constructor(props) {
@@ -132,6 +132,11 @@ export default class Observations extends React.Component
 	    return item.resource;
 	})
 
+	// If no component values then no displayable data
+	if (!items || items[0].component == undefined) {
+	    return "";
+	}
+
 	// Collect/group items to display in each graph
 	let groups = this.groupBy(items, item => item.component[0].code.text);
 
@@ -141,11 +146,14 @@ export default class Observations extends React.Component
 	// Build each graph
 	for (var key in groups) {
 	    let selectedItems = groups[key];
-	    let isDoubleValue = selectedItems[0].component[1] != undefined;	// First item has two components?
-	    if (isDoubleValue) {
-		results.push(<CandlestickChart key={key} resources={selectedItems} targetObservation={key}/>);
-	    } else {
-		results.push(<LineChart key={key} resources={selectedItems} targetObservation={key}/>);
+	    // Only graph if more than one value and "graphable" (numeric)
+	    if(selectedItems.length > 1 && selectedItems[0].component[0].isGraphable) {
+		let isDoubleValue = selectedItems[0].component[1] != undefined;	// First item has two components?
+		if (isDoubleValue) {
+		    results.push(<CandlestickChart key={key} resources={selectedItems} targetObservation={key}/>);
+		} else {
+		    results.push(<LineChart key={key} resources={selectedItems} targetObservation={key}/>);
+		}
 	    }
 	}
 
@@ -164,7 +172,7 @@ export default class Observations extends React.Component
     {
         return (
 	    <div>
-		{ this.props.selectedSubCat != "Observation - Other" ? this.renderGraphs() : "" }
+		{ this.props.type ? this.renderGraphs() : "" }
 		<Grid
             	    rows={ (this.props.resources || []).map(o => o.resource) }
             	    title="Observations"

@@ -75,15 +75,23 @@ export class PatientDetail extends React.Component
         }
     }
 
-    // Kluge: synthesize a component for a resource if there isn't one
+    // Kluge: synthesize a component for a resource if there isn't one (and valueQuantity/valueString is defined)
     synthesizeComponents(entry) {
 	let r = entry.resource;
-	if (r.component == undefined) {
-	    r.component = [{ code : { text : r.code.text },
-				 valueQuantity : { value : r.valueQuantity.value,
-						   unit: r.valueQuantity.unit,
-						   code: r.valueQuantity.code }
-			       }];
+	if (r.valueQuantity != undefined && r.component == undefined) {
+	    r.component = [{ code: { text: r.code.text },
+		    valueQuantity: { value: r.valueQuantity.value,
+				      unit: r.valueQuantity.unit,
+				      code: r.valueQuantity.code },
+		      isGraphable: true
+			   }];
+	} else if (r.valueString != undefined && r.component == undefined) {
+	    r.component = [{ code: { text: r.code.text },
+		    valueQuantity: { value: r.valueString,
+				      unit: "",
+				      code: "" },
+		      isGraphable: false
+			   }];
 	}
     }
 
@@ -354,7 +362,7 @@ export class PatientDetail extends React.Component
         }
 
         if (type.indexOf("Observation") === 0) {
-            return <Observations resources={items} selectedSubCat={this.state.selectedSubCat}/>;
+            return <Observations resources={items} type={type}/>;
         }
 
         switch (type) {

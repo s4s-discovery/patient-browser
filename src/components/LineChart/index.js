@@ -1,8 +1,11 @@
-import React       from "react"
-import PropTypes   from "prop-types"
-import moment      from "moment"
-import createPlotlyComponent from "react-plotlyjs"
-import Plotly      from "plotly.js/dist/plotly-cartesian"		
+import React       from 'react'
+import PropTypes   from 'prop-types'
+import moment      from 'moment'
+import CONFIG      from './config'
+import HoverTextTemplate from './hoverTextTemplate.js'
+import createPlotlyComponent from 'react-plotlyjs'
+import Plotly      from 'plotly.js/dist/plotly-cartesian'
+import		   './LineChart.less'
 
 const PlotlyComponent = createPlotlyComponent(Plotly);
 
@@ -53,15 +56,16 @@ export default class LineChart extends React.Component
 		type: 'scatter',
 		x: dates,
 		y: values,
-		marker: {
-		    color: 'rgb(16, 32, 77)'
-		},
-		line: {
-		    width: 1
-		},
+		marker: CONFIG.marker,
+		line: CONFIG.line,
 		// Show value (with unit) and date on one hover text item
 		hoverinfo: 'text',
-		hovertext: values.map((val, index) => val + ' ' + unit + '<br>(' + moment(dates[index]).format("D MMM YYYY")+ ')')
+//		hovertext: values.map((val, index) => val + ' ' + unit + '<br>(' + moment(dates[index]).format(CONFIG.hoverTextDateFormat)+ ')')
+		hovertext: values.map((val, index) => HoverTextTemplate({title: this.props.targetObservation,
+									 value: val,
+									 unit: unit,
+									 date: moment(dates[index]).format(CONFIG.hoverTextDateFormat)})),
+		hoverlabel: CONFIG.hoverLabel
 	    },
 	];
 
@@ -86,15 +90,10 @@ export default class LineChart extends React.Component
 	    yaxis: {
 		title: unit
 	    },
-	    height: 250,
-	    margin: { l:50, r:50, b:75, t:50, pad:0 }
+	    height: CONFIG.chartHeight,
+	    margin: CONFIG.margin
 	};
 
-	let config = {
-	    showLink: false,
-	    displayModeBar: false
-	};
-
-	return (<PlotlyComponent className={this.state.chartName} data={data} layout={layout} config={config}/>);
+	return (<PlotlyComponent className={this.state.chartName} data={data} layout={layout} config={CONFIG.chartConfig}/>);
     }
 }
